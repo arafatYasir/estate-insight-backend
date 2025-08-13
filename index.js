@@ -31,10 +31,8 @@ app.get("/api/houses", (req, res) => {
     } = req.query;
 
     // Conver query params to actual value
-    if (limit || !parseInt(limit) === 0) {
-        limit = parseInt(limit);
-    }
-    else {
+    limit = parseInt(limit);
+    if (isNaN(limit) || limit <= 0) {
         limit = null;
     }
 
@@ -63,9 +61,10 @@ app.get("/api/houses", (req, res) => {
     });
 
     if (limit) {
+        const limitedData = filtered.slice(0, limit);
         res.json({
-            count: limit,
-            data: filtered.slice(0, limit)
+            count: limitedData.length,
+            data: limitedData
         })
     }
     else {
