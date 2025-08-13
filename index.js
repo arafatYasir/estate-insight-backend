@@ -31,7 +31,9 @@ app.get("/api/houses", (req, res) => {
     } = req.query;
 
     // Conver query params to actual value
-    limit = limit ? parseInt(limit) : houses.length;
+    if(limit || !parseInt(limit) === 0) {
+        limit = parseInt(limit);
+    }
     minLat = minLat ? parseFloat(minLat) : -90;
     maxLat = maxLat ? parseFloat(maxLat) : 90;
     minLng = minLng ? parseFloat(minLng) : -180;
