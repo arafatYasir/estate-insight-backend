@@ -31,9 +31,13 @@ app.get("/api/houses", (req, res) => {
     } = req.query;
 
     // Conver query params to actual value
-    if(limit || !parseInt(limit) === 0) {
+    if (limit || !parseInt(limit) === 0) {
         limit = parseInt(limit);
     }
+    else {
+        limit = null;
+    }
+
     minLat = minLat ? parseFloat(minLat) : -90;
     maxLat = maxLat ? parseFloat(maxLat) : 90;
     minLng = minLng ? parseFloat(minLng) : -180;
@@ -58,12 +62,18 @@ app.get("/api/houses", (req, res) => {
             (!homeType || h.homeType === homeType);
     });
 
-    console.log(limit);
-
-    res.json({
-        count: limit || filtered.length,
-        data: filtered.slice(0, limit)
-    })
+    if (limit) {
+        res.json({
+            count: limit,
+            data: filtered.slice(0, limit)
+        })
+    }
+    else {
+        res.json({
+            count: filtered.length,
+            data: filtered
+        })
+    }
 })
 
 app.listen(port, () => {
