@@ -20,7 +20,6 @@ function getLatestPrice(prices) {
 
 }
 
-
 app.get("/", (req, res) => {
     res.send("Hello World!");
 })
@@ -28,10 +27,11 @@ app.get("/", (req, res) => {
 app.get("/api/houses", (req, res) => {
     let {
         minLat, maxLat, minLng, maxLng,
-        listingType, minPrice, maxPrice, homeType, beds, baths
+        listingType, minPrice, maxPrice, homeType, beds, baths, limit
     } = req.query;
 
     // Conver query params to actual value
+    limit = limit ? parseInt(limit) : 200;
     minLat = minLat ? parseFloat(minLat) : -90;
     maxLat = maxLat ? parseFloat(maxLat) : 90;
     minLng = minLng ? parseFloat(minLng) : -180;
@@ -56,9 +56,11 @@ app.get("/api/houses", (req, res) => {
             (!homeType || h.homeType === homeType);
     });
 
+    
+
     res.json({
         count: filtered.length,
-        data: filtered
+        data: filtered.slice(0, limit)
     })
 })
 
