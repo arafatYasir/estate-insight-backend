@@ -56,14 +56,14 @@ app.get("/api/houses", (req, res) => {
             (!homeType || h.homeType === homeType);
     });
 
-    
+    console.log(limit);
 
     res.json({
-        count: filtered.length,
+        count: limit || filtered.length,
         data: filtered.slice(0, limit)
     })
 })
 
 app.listen(port, () => {
-    console.log("The bakcend is running on: ", port);
+    console.log("The backend is running on: ", port);
 })
