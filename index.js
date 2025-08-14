@@ -27,6 +27,27 @@ function getLatestPrice(prices) {
     return parseFloat(latest.split('|')[1].trim());
 }
 
+// Get zoom-based limit
+function getZoomBasedLimit(zoomLevel) {
+    if(!zoomLevel) return null;
+    
+    const zoom = parseInt(zoomLevel);
+
+    if(zoom <= 6) {
+        return 200;
+    }
+    else if(zoom <= 8) {
+        return 400;
+    }
+    else if(zoom <= 10) {
+        return 700;
+    }
+    else if(zoom <= 12) {
+        return 900;
+    }
+    else return null;
+}
+
 app.get("/", (req, res) => {
     res.send("Hello World!");
 })
@@ -34,7 +55,7 @@ app.get("/", (req, res) => {
 app.get("/api/houses", (req, res) => {
     let {
         minLat, maxLat, minLng, maxLng,
-        listingType, minPrice, maxPrice, homeType, beds, baths, limit
+        listingType, minPrice, maxPrice, homeType, beds, baths, limit, zoomLevel
     } = req.query;
 
     // Convert query params to actual values
@@ -52,8 +73,8 @@ app.get("/api/houses", (req, res) => {
     beds = beds ? parseInt(beds) : 0;
     baths = baths ? parseInt(baths) : 0;
 
-    // Optimized filtering: check geographical bounds first (fastest filter)
-    const filtered = housesWithLatestPrice.filter(h => {
+    // Filtering Houses
+    let filtered = housesWithLatestPrice.filter(h => {
         // Geographic filter first (most selective, fastest)
         if (h.lat < minLat || h.lat > maxLat || h.lon < minLng || h.lon > maxLng) {
             return false;
@@ -81,11 +102,23 @@ app.get("/api/houses", (req, res) => {
         return true;
     });
 
+    const zoomLimit = getZoomBasedLimit(zoomLevel);
+
+    if(zoomLimit) {
+        filtered.sort((a, b) => b.latestPrice - a.latestPrice);
+
+        filtered = filtered.slice(0, zoomLimit);
+
+        console.log(`Zoom Level: ${zoomLevel}, Applied Limit: ${zoomLimit}, Results: ${filtered.length}`)
+    }
+
     const result = limit ? filtered.slice(0, limit) : filtered;
 
     res.json({
         count: result.length,
-        totalMatches: filtered.length, // Total matches before limit
+        totalMatches: filtered.length,
+        zoomLevel: zoomLevel || null,
+        appliedZoomLimit: zoomLimit,
         data: result
     });
 })
