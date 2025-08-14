@@ -104,12 +104,10 @@ app.get("/api/houses", (req, res) => {
 
     const zoomLimit = getZoomBasedLimit(zoomLevel);
 
-    if(zoomLimit) {
+    if(zoomLimit && filtered.length > zoomLimit) {
         filtered.sort((a, b) => b.latestPrice - a.latestPrice);
 
         filtered = filtered.slice(0, zoomLimit);
-
-        console.log(`Zoom Level: ${zoomLevel}, Applied Limit: ${zoomLimit}, Results: ${filtered.length}`)
     }
 
     const result = limit ? filtered.slice(0, limit) : filtered;
