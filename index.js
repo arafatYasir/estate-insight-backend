@@ -7,6 +7,14 @@ app.use(cors());
 
 const port = process.env.PORT || 5000;
 
+// Pre-compute latest prices once at startup
+const housesWithLatestPrice = houses.map(house => {
+    return {
+        ...house,
+        latestPrice: getLatestPrice(house.prices)
+    };
+});
+
 function getLatestPrice(prices) {
     let latest = prices[0];
 
@@ -17,7 +25,6 @@ function getLatestPrice(prices) {
         if (date > latestDate) latest = p;
     }
     return parseFloat(latest.split('|')[1].trim());
-
 }
 
 app.get("/", (req, res) => {
@@ -30,7 +37,7 @@ app.get("/api/houses", (req, res) => {
         listingType, minPrice, maxPrice, homeType, beds, baths, limit
     } = req.query;
 
-    // Conver query params to actual value
+    // Convert query params to actual values
     limit = parseInt(limit);
     if (isNaN(limit) || limit <= 0) {
         limit = null;
@@ -45,34 +52,42 @@ app.get("/api/houses", (req, res) => {
     beds = beds ? parseInt(beds) : 0;
     baths = baths ? parseInt(baths) : 0;
 
-    const filtered = houses.filter(h => {
-        const price = getLatestPrice(h.prices);
+    // Optimized filtering: check geographical bounds first (fastest filter)
+    const filtered = housesWithLatestPrice.filter(h => {
+        // Geographic filter first (most selective, fastest)
+        if (h.lat < minLat || h.lat > maxLat || h.lon < minLng || h.lon > maxLng) {
+            return false;
+        }
 
-        return h.lat >= minLat &&
-            h.lat <= maxLat &&
-            h.lon >= minLng &&
-            h.lon <= maxLng &&
-            price >= minPrice &&
-            price <= maxPrice &&
-            h.beds >= beds &&
-            h.baths >= baths &&
-            (!listingType || h.listingType === listingType) &&
-            (!homeType || h.homeType === homeType);
+        // Price filter (using pre-computed price)
+        if (h.latestPrice < minPrice || h.latestPrice > maxPrice) {
+            return false;
+        }
+
+        // Other filters
+        if (h.beds < beds || h.baths < baths) {
+            return false;
+        }
+
+        // String comparisons last (potentially expensive)
+        if (listingType && h.listingType !== listingType) {
+            return false;
+        }
+
+        if (homeType && h.homeType !== homeType) {
+            return false;
+        }
+
+        return true;
     });
 
-    if (limit) {
-        const limitedData = filtered.slice(0, limit);
-        res.json({
-            count: limitedData.length,
-            data: limitedData
-        })
-    }
-    else {
-        res.json({
-            count: filtered.length,
-            data: filtered
-        })
-    }
+    const result = limit ? filtered.slice(0, limit) : filtered;
+
+    res.json({
+        count: result.length,
+        totalMatches: filtered.length, // Total matches before limit
+        data: result
+    });
 })
 
 app.listen(port, () => {
