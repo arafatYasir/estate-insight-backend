@@ -40,7 +40,7 @@ function getZoomBasedLimit(zoomLevel) {
         return 400;
     }
     else if(zoom <= 10) {
-        return 700;
+        return null;
     }
     else if(zoom <= 12) {
         return 900;
